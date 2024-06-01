@@ -2,6 +2,11 @@ import React, { useState, useEffect, useContext } from "react";
 import AddProduct from "../components/AddProduct";
 import UpdateProduct from "../components/UpdateProduct";
 import AuthContext from "../AuthContext";
+import { FiDownload } from "react-icons/fi";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable'
+
+
 
 function Inventory() {
   const [showProductModal, setShowProductModal] = useState(false);
@@ -11,6 +16,10 @@ function Inventory() {
   const [searchTerm, setSearchTerm] = useState();
   const [updatePage, setUpdatePage] = useState(true);
   const [stores, setAllStores] = useState([]);
+  const [showExportOptions, setShowExportOptions] = useState(false);
+
+  const doc = new jsPDF();
+
 
   const authContext = useContext(AuthContext);
   console.log('====================================');
@@ -84,6 +93,51 @@ function Inventory() {
   const handleSearchTerm = (e) => {
     setSearchTerm(e.target.value);
     fetchSearchData();
+  };
+
+
+
+  // Download product details
+  const toggleExportOptions = () => {
+    setShowExportOptions(!showExportOptions);
+  };
+
+  // download pdf
+  const currentDate = new Date().toLocaleDateString();
+  const exportPDF = () => {
+    doc.autoTable({html:'#productDetails'});
+    doc.save(`product-details_${currentDate}`);
+  };
+
+  // download CSV file
+  const exportCSV = () => {
+    console.log(products)
+    const headers = Array.from(document.querySelectorAll("#productDetails th"))
+      .map(th => th.textContent.trim());
+    
+    const rows = products.map(item => {
+      return [
+        item.name,
+        item.manufacturer,
+        item.stock,
+        item.description,
+        item.stock > 0 ? "In stock" : "Out of stock"
+      ];
+    });
+
+    // Create CSV content
+    const csvContent = "data:text/csv;charset=utf-8," + 
+      [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `product-details_${currentDate}.csv`);
+    document.body.appendChild(link);
+
+    // Trigger download
+    link.click();
   };
 
   return (
@@ -214,8 +268,35 @@ function Inventory() {
                 {/* <Link to="/inventory/add-product">Add Product</Link> */}
                 Add Product
               </button>
+              <div className="relative">
+                <button
+                  className="font-bold p-2 text-lg hover:text-blue-700 rounded"
+                  title="Download purchase details"
+                  onClick={toggleExportOptions}
+                >
+                  <FiDownload/>
+                </button>
+                
+              </div>
             </div>
+
           </div>
+              {showExportOptions && (
+              <div className="absolute right-16 mt-0 bg-white shadow-md rounded border">
+                <button
+                  className=" block px-2 py-1 text-xs border-b-2 text-black hover:bg-gray-200"
+                  onClick={exportPDF}
+                >
+                  Export PDF
+                </button>
+                <button
+                  className=" block px-2 py-1 text-xs text-black hover:bg-gray-200"
+                  onClick={exportCSV}
+                >
+                  Export CSV
+                </button>
+              </div>
+            )}
           <table className="min-w-full divide-y-2 divide-gray-200 text-sm">
             <thead>
               <tr>
@@ -264,7 +345,7 @@ function Inventory() {
                         className="text-green-700 cursor-pointer"
                         onClick={() => updateProductModalSetting(element)}
                       >
-                        Edit{" "}
+                        Edit
                       </span>
                       <span
                         className="text-red-600 px-2 cursor-pointer"
@@ -272,6 +353,53 @@ function Inventory() {
                       >
                         Delete
                       </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {/* for exporting pdf and csv */}
+          <table id="productDetails" className=" invisible min-w-full divide-y-2 divide-gray-200 text-sm">
+            <thead>
+              <tr>
+                <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-900">
+                  Products
+                </th>
+                <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-900">
+                  Manufacturer
+                </th>
+                <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-900">
+                  Stock
+                </th>
+                <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-900">
+                  Description
+                </th>
+                <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-900">
+                  Availibility
+                </th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-200">
+              {products.map((element, index) => {
+                return (
+                  <tr key={element._id}>
+                    <td className="whitespace-nowrap px-4 py-2  text-gray-900">
+                      {element.name}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {element.manufacturer}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {element.stock}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {element.description}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-2 text-gray-700">
+                      {element.stock > 0 ? "In Stock" : "Not in Stock"}
                     </td>
                   </tr>
                 );
