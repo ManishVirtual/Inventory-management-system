@@ -361,7 +361,7 @@ function Inventory() {
           </table>
 
           {/* for exporting pdf and csv */}
-          <table id="productDetails" className=" invisible min-w-full divide-y-2 divide-gray-200 text-sm">
+          <table id="productDetails" className=" hidden min-w-full divide-y-2 divide-gray-200 text-sm">
             <thead>
               <tr>
                 <th className="whitespace-nowrap px-4 py-2 text-left font-medium text-gray-900">
